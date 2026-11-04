@@ -57,7 +57,7 @@ function buildRequest(settings, contents, o = {}) {
   return { url: GEMINI_BASE + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', init: { method: 'POST', headers, body: JSON.stringify(payload) } };
 }
 
-export async function streamGemini({ settings, contents, signal, fetchFn = fetch, onText, o }) {
+async function streamGeminiOnce({ settings, contents, signal, fetchFn = fetch, onText, o }) {
   const { url, init } = buildRequest(settings, contents, o);
   const res = await fetchFn(url, { ...init, signal });
   if (!res.ok) {
@@ -94,6 +94,31 @@ export async function streamGemini({ settings, contents, signal, fetchFn = fetch
     parts.push({ text: '' });
   }
   return { parts, finish, usage };
+}
+
+
+// ---- resilience: Gemini returns 503 "high demand" / 429 often, and mobile Safari reports dropped connections as "Load failed".
+// Retry once on the chosen model, then fall back to other stable models. Never retries after text has started streaming.
+export const GEMINI_FALLBACKS = ['gemini-3.5-flash', 'gemini-2.5-flash'];
+const isTransient = (e) => [429, 500, 502, 503, 504].includes(e && e.status) || (!(e && e.status) && /load failed|failed to fetch|networkerror|network request failed|terminated/i.test(String((e && e.message) || e)));
+const sleep = (ms, signal) => new Promise((res, rej) => { const t = setTimeout(res, ms); if (signal) signal.addEventListener('abort', () => { clearTimeout(t); rej(Object.assign(new Error('Aborted'), { name: 'AbortError' })); }, { once: true }); });
+export async function streamGemini(opts) {
+  const chosen = (opts.settings && opts.settings.model) || GEMINI_MODELS[0].id;
+  const models = [chosen, ...GEMINI_FALLBACKS.filter((m) => m !== chosen)];
+  let streamed = false, firstErr = null;
+  const onText = opts.onText ? (t) => { streamed = true; opts.onText(t); } : undefined;
+  for (let mi = 0; mi < models.length; mi++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try { return await streamGeminiOnce({ ...opts, onText, settings: { ...opts.settings, model: models[mi] } }); }
+      catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        firstErr = firstErr || e;
+        if (streamed || !isTransient(e)) throw (mi === 0 ? e : firstErr);
+        if (attempt === 0) await sleep(1500 * (mi + 1), opts.signal);
+      }
+    }
+  }
+  throw firstErr;
 }
 
 export async function runGemini({ settings, history, turn, executeTool, onText, onToolStart, onToolEnd, signal, fetchFn = fetch, maxLoops = 6 }) {
