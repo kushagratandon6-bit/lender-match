@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; base-uri 'none'; form-action 'none'">
+<title>Lender Match</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23C96442'/%3E%3Cpath d='M16 6v20M6 16h20M9 9l14 14M23 9L9 23' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/chat.css">
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><svg class="spark" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v24M4 16h24M7.5 7.5l17 17M24.5 7.5l-17 17" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Lender Match</span></div>
+    <button class="newchat" id="newChat">＋ New case</button>
+    <div class="recents-h">Recents</div>
+    <nav class="recents" id="recents"></nav>
+    <div class="side-foot">
+      <a href="model.html">Model Studio (rules, policies, payouts)</a>
+      <a href="manual.html">Manual form &amp; lender data</a>
+      <button id="openSettings" class="linkbtn">⚙ Settings</button>
+      <button id="clearHistory" class="linkbtn">Clear history</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon" id="menuBtn" aria-label="Menu">☰</button>
+      <div class="model-chip" id="modelChip"></div>
+    </header>
+    <div class="thread" id="thread" aria-live="polite"></div>
+    <div class="composer-wrap">
+      <div class="composer" id="composer">
+        <div class="chips" id="chips"></div>
+        <textarea id="input" rows="1" placeholder="Upload documents or describe the case…"></textarea>
+        <div class="crow">
+          <button class="icon attach" id="attachBtn" title="Attach photos, PDFs, CSV" aria-label="Attach files">＋</button>
+          <input type="file" id="fileInput" multiple accept="image/*,application/pdf,.pdf,.csv,.txt,.tsv,.json" hidden>
+          <span class="spacer"></span>
+          <button class="send" id="sendBtn" aria-label="Send">↑</button>
+        </div>
+      </div>
+      <p class="fine">Screening only – not a lender decision. Documents are sent to your AI provider; get customer consent first.</p>
+    </div>
+  </main>
+  <div class="dropzone" id="dropzone">Drop files to attach</div>
+</div>
+
+<dialog id="settings">
+  <form method="dialog" id="settingsForm">
+    <h2>Settings</h2>
+    <p class="note" id="settingsMsg"></p>
+    <label>AI provider
+      <select id="setProvider"></select>
+    </label>
+    <label>API key <small id="keyHelp"></small>
+      <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your API key">
+    </label>
+    <label class="inline"><input type="checkbox" id="setRemember"> Remember key on this device</label>
+    <label>Model
+      <input id="setModel" list="modelList" autocomplete="off">
+      <datalist id="modelList"></datalist>
+    </label>
+    <details><summary>Advanced: proxy (optional)</summary>
+      <label>Proxy URL <small>(Cloudflare Worker – keeps the key off the browser)</small><input id="setProxy" placeholder="https://…workers.dev"></label>
+      <label>Passcode <small>(sent as x-passcode)</small><input id="setPass" type="password" autocomplete="off"></label>
+    </details>
+    <div class="warn" id="privacyWarn"></div>
+    <div class="dlg-actions"><button type="button" id="cancelSettings" class="ghost">Cancel</button><button value="save" id="saveSettings" class="primary">Save</button></div>
+  </form>
+</dialog>
+<script type="module" src="src/chat.js"></script>
+</body>
+</html>
